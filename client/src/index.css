@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0F172A; /* Slate 900 */
+  background-color: #FFFFFF;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom donut chart circle utilities if needed */
+.donut-ring {
+  stroke: #E2E8F0; /* slate-200 */
+}
+.donut-segment-amber {
+  stroke: #F59E0B;
+}
+.donut-segment-green {
+  stroke: #10B981;
+}
+.donut-segment-red {
+  stroke: #EF4444;
+}
