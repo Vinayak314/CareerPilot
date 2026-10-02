@@ -1,14 +1,8 @@
 import { Sparkles, PenTool } from 'lucide-react';
-import Sidebar from '../components/Sidebar';
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-white">
-      <Sidebar />
-      
-      <main className="ml-64 p-8">
-        
-        <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-end justify-between mb-8">
             <div>
@@ -103,8 +97,6 @@ const Dashboard = () => {
           </div>
 
         </div>
-      </main>
-    </div>
   );
 };
 

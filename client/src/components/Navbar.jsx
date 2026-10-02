@@ -1,11 +1,7 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Navigation } from 'lucide-react';
 
 const Navbar = () => {
-  const location = useLocation();
-  const isDashboard = location.pathname.includes('/dashboard');
-
-  if (isDashboard) return null; // Don't show top navbar on dashboard (it uses sidebar)
 
   return (
     <nav className="bg-white border-b border-slate-100">
@@ -20,10 +16,9 @@ const Navbar = () => {
           </Link>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-            <a href="#" className="hover:text-slate-900 transition-colors">Features</a>
-            <a href="#" className="hover:text-slate-900 transition-colors">How It Works</a>
-            <a href="#" className="hover:text-slate-900 transition-colors">Testimonials</a>
-            <a href="#" className="hover:text-slate-900 transition-colors">Pricing</a>
+            <a href="#how-it-works" className="hover:text-slate-900 transition-colors">How It Works</a>
+            <a href="#testimonials" className="hover:text-slate-900 transition-colors">Testimonials</a>
+            <a href="#pricing" className="hover:text-slate-900 transition-colors">Pricing</a>
           </div>
 
           <div className="flex items-center gap-6">

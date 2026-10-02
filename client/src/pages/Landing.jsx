@@ -26,7 +26,7 @@ const Landing = () => {
   return (
     <div className="flex flex-col items-center pb-24">
       {/* Hero Section */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
+      <div id="features" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           
           <div className="max-w-2xl">
@@ -124,7 +124,7 @@ const Landing = () => {
       </div>
 
       {/* Steps Section */}
-      <div className="w-full bg-slate-50/50 border-t border-slate-100 py-24">
+      <div id="how-it-works" className="w-full bg-slate-50/50 border-t border-slate-100 py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center mb-16">
@@ -152,6 +152,48 @@ const Landing = () => {
             ))}
           </div>
 
+        </div>
+      </div>
+      {/* Testimonials Section */}
+      <div id="testimonials" className="w-full py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-slate-900 mb-12">What Our Users Say</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
+                <p className="text-slate-600 mb-4">"This tool completely transformed my resume. I landed interviews at top tech companies within weeks of using CareerPilot."</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-200"></div>
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">Sarah Jenkins</div>
+                    <div className="text-slate-500 text-xs">Software Engineer</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing Section */}
+      <div id="pricing" className="w-full bg-slate-50 py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-slate-900 mb-12">Simple, Transparent Pricing</h2>
+          <div className="flex justify-center">
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm max-w-sm w-full">
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Pro Plan</h3>
+              <div className="text-4xl font-bold text-teal-700 mb-6">$19<span className="text-lg text-slate-500 font-normal">/mo</span></div>
+              <ul className="text-left space-y-4 mb-8 text-slate-600">
+                <li className="flex items-center gap-2">✓ Unlimited resume scans</li>
+                <li className="flex items-center gap-2">✓ AI-powered rewrites</li>
+                <li className="flex items-center gap-2">✓ Mock interview prep</li>
+                <li className="flex items-center gap-2">✓ Job match scoring</li>
+              </ul>
+              <button className="w-full py-3 bg-teal-700 text-white rounded-lg font-bold hover:bg-teal-800 transition-colors">
+                Get Started
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -12,13 +12,13 @@ This checklist is based on [CareerPilot_Technical_Overview.md](./CareerPilot_Tec
 
 ## Frontend page work (Figma references)
 
-Use the screenshots in [`figma/`](./figma/) as the page layout and visual reference. The shared style guide is [`figma/design-system.png`](./figma/design-system.png): teal primary actions, slate text, green/amber/red match states, score rings, cards, and compact labels. Existing pages are starter implementations; checked items mean the page/component exists, not that it is complete or connected to live data.
+Use the screenshots in [`figma/`](./figma/) as the page layout and visual reference. The shared style guide is [`figma/design-system.png`](./figma/design-system.png): teal primary actions, slate text, green/amber/red match states, score rings, cards, and compact labels. Existing pages are static starter implementations and currently need backend integration; checked items mean the page/component exists, not that it is complete or connected to live data.
 
 ### Shared app shell and navigation
 
 - [x] Add a reusable sidebar with links for Dashboard, Resume Upload, Job Matches, Application Tracker, Interview Prep, and Settings.
-- [ ] Add routes and page components for each sidebar destination; currently only `/dashboard` is routed.
-- [ ] Show the sidebar on all signed-in app pages and keep the public landing/auth navigation separate.
+- [x] Add routes and page components for each sidebar destination; currently only `/dashboard` is routed.
+- [x] Show the sidebar on all signed-in app pages and keep the public landing/auth navigation separate.
 - [ ] Make the active navigation item follow the current route, including nested routes.
 - [ ] Replace the hard-coded David Miller / Premium Member avatar area with the signed-in user's profile data.
 - [ ] Add responsive behavior for the sidebar on narrow screens (drawer or compact navigation).
@@ -43,7 +43,7 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 
 ### Resume Upload - [`figma/upload-desktop.png`](./figma/upload-desktop.png)
 
-- [ ] Create the `/upload` page using the signed-in sidebar layout.
+- [x] Create the `/upload` page using the signed-in sidebar layout.
 - [ ] Add a drag-and-drop and browse-to-select resume dropzone.
 - [ ] Support the intended file types (PDF/DOCX, and TXT if supported) and enforce a 10 MB maximum with clear validation.
 - [ ] Show selected file name, size, upload progress, replace/remove actions, and upload errors.
@@ -63,7 +63,7 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 
 ### Rewrite Studio - [`figma/rewrite-desktop.png`](./figma/rewrite-desktop.png)
 
-- [ ] Create the rewrite page and progress/header area shown in the reference.
+- [x] Create the rewrite page and progress/header area shown in the reference.
 - [ ] Show original resume bullets alongside generated suggestions, grouped by the source bullet.
 - [ ] Display added keyword chips and any score forecast only when returned by the analysis/advisor API.
 - [ ] Add accept, edit, and reject actions for each suggestion; make edit save the user's changes.
@@ -73,7 +73,7 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 
 ### Interview Prep - [`figma/interview-prep-desktop.png`](./figma/interview-prep-desktop.png)
 
-- [ ] Create the interview-prep page with role/company context and a "Start AI Mock Practice" action.
+- [x] Create the interview-prep page with role/company context and a "Start AI Mock Practice" action.
 - [ ] Render questions with category and difficulty labels, suggested talking points, example response, and critical phrases.
 - [ ] Add expand/collapse behavior for question cards and allow users to edit or save their prep notes if supported.
 - [ ] Show interview insights and role-specific metrics only when supplied by the backend; avoid hard-coded company claims.
@@ -82,7 +82,7 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 
 ### Job Matches - [`figma/job-matches-desktop.png`](./figma/job-matches-desktop.png)
 
-- [ ] Create the ranked job-match page with fit score rings and job cards.
+- [x] Create the ranked job-match page with fit score rings and job cards.
 - [ ] Show title, company, location/work mode, salary when available, aligned skills, warnings, and critical gaps.
 - [ ] Add functional sorting and location filters with visible selected values and a clear/reset action.
 - [ ] Connect cards to the ranked matches API and handle missing optional job fields.
@@ -92,7 +92,7 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 
 ### Application Tracker - [`figma/kanban-desktop.png`](./figma/kanban-desktop.png)
 
-- [ ] Create the Kanban page with Saved, Applied, Interviewing, Offer, and Rejected columns.
+- [x] Create the Kanban page with Saved, Applied, Interviewing, Offer, and Rejected columns.
 - [ ] Render application cards with company, role, fit score, date/status, and optional notes or reminders.
 - [ ] Add drag-and-drop across columns and persist status changes; restore the prior position if a save fails.
 - [ ] Add an "Add Custom Job Tracking Card" flow with required-field validation.
@@ -101,7 +101,7 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 
 ### Settings - [`figma/settings-desktop.png`](./figma/settings-desktop.png)
 
-- [ ] Create the Settings page with User Account Settings and Security Configuration tabs/sections.
+- [x] Create the Settings page with User Account Settings and Security Configuration tabs/sections.
 - [ ] Load and edit the signed-in user's name and email; save updates with validation and confirmation feedback.
 - [ ] List uploaded resumes with upload date and associated fit score when available; support safe deletion.
 - [ ] Add notification preference controls and persist changes if notifications are implemented.
