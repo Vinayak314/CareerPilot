@@ -1,10 +1,10 @@
 # Dependencies
-node_modules/
+**/node_modules/
 .npm/
 
 # Environment and local secrets
-.env
-.env.*
+**/.env
+**/.env.*
 !.env.example
 !.env.sample
 !.env.template
