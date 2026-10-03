@@ -1,117 +1,115 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import { TextField } from '../components/ui/FormField';
+import Button from '../components/ui/Button';
+import { Alert, Card } from '../components/ui/Layout';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const navigate = useNavigate();
-  const { login, isLoading, error } = useAuthStore();
+  const location = useLocation();
+  const { login, isLoading, error, errorCode } = useAuthStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await login(email, password);
     if (success) {
-      navigate('/dashboard'); // Adjust based on your routes
+      const from = location.state?.from;
+      const target = from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : '/dashboard';
+      navigate(target, { replace: true });
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-5rem)] bg-slate-50">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-md"
-      >
-        <div className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome back</h2>
-            <p className="text-sm text-slate-500">Sign in to continue to CareerPilot</p>
-          </div>
+    <div className="flex items-center justify-center min-h-[calc(100vh-5rem)] bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8 animate-[fadeIn_300ms_ease-out]">
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome back</h2>
+          <p className="mt-2 text-sm text-slate-600">Sign in to continue to CareerPilot</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <Card>
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+              <Alert tone={errorCode === 'invalid' ? 'warning' : 'error'} title="Sign in failed">
                 {error}
-              </div>
+                {errorCode === 'invalid' && (
+                  <div className="mt-2 text-xs">
+                    Please check your email and password, or{' '}
+                    <Link to="/signup" className="underline font-semibold hover:text-amber-800">
+                      create an account
+                    </Link>{' '}
+                    if you don't have one.
+                  </div>
+                )}
+              </Alert>
             )}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-400" />
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all sm:text-sm"
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-slate-400" />
-                </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all sm:text-sm"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
+            <TextField
+              id="login-email"
+              label="Email address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              icon={Mail}
+              required
+              autoComplete="email"
+            />
 
-            <div className="flex items-center justify-between mt-2">
+            <TextField
+              id="login-password"
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              icon={Lock}
+              required
+              autoComplete="current-password"
+            />
+
+            <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input id="remember-me" type="checkbox" className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-teal-700 focus:ring-teal-700 border-slate-300 rounded cursor-pointer"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700 cursor-pointer">
                   Remember me
                 </label>
               </div>
-              <a href="#" className="text-sm font-medium text-teal-700 hover:text-teal-800">
-                Forgot password?
-              </a>
+              <div className="text-sm">
+                <a href="#" className="font-semibold text-teal-700 hover:text-teal-800">
+                  Forgot password?
+                </a>
+              </div>
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-700 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full"
+              loading={isLoading}
+              iconRight={ArrowRight}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign in
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+              Sign in
+            </Button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-slate-500">
+          <div className="mt-8 text-center text-sm text-slate-600">
             Don't have an account?{' '}
-            <Link to="/signup" className="font-medium text-teal-700 hover:text-teal-800 transition-colors">
+            <Link to="/signup" className="font-semibold text-teal-700 hover:text-teal-800">
               Sign up
             </Link>
           </div>
-        </div>
-      </motion.div>
+        </Card>
+      </div>
     </div>
   );
 };

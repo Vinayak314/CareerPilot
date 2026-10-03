@@ -1,152 +1,200 @@
-import { Sparkles, PenTool } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Sparkles, PenTool, FileText, ArrowRight } from 'lucide-react';
+import useAnalysisStore from '../store/analysisStore';
+import useApi from '../hooks/useApi';
+import { analysisApi } from '../api/endpoints';
+import { normalizeAnalysis, analysisTitle } from '../lib/normalize';
+import { scoreLabel, toScore } from '../lib/format';
+import { Card, LoadingState, ErrorState, EmptyState, PageHeader } from '../components/ui/Layout';
+import ScoreRing from '../components/ui/ScoreRing';
+import { SeverityTag } from '../components/ui/Tags';
+import Button from '../components/ui/Button';
 
 const Dashboard = () => {
+  const { currentAnalysisId, setCurrentAnalysisId } = useAnalysisStore();
+  const navigate = useNavigate();
+
+  // If we have an ID, load it. Otherwise load latest.
+  const loader = async () => {
+    try {
+      const raw = currentAnalysisId ? await analysisApi.get(currentAnalysisId) : await analysisApi.latest();
+      const norm = normalizeAnalysis(raw);
+      if (norm && norm.id !== currentAnalysisId) {
+        setCurrentAnalysisId(norm.id);
+      }
+      return norm;
+    } catch (err) {
+      if (err?.response?.status === 404 && !currentAnalysisId) {
+        return null; // Empty state
+      }
+      throw err;
+    }
+  };
+
+  const { data: analysis, loading, error, reload } = useApi(loader, [currentAnalysisId]);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_300ms_ease-out]">
+        <PageHeader title="Loading report..." description="Fetching your latest optimization data." />
+        <LoadingState rows={2} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <ErrorState title="Failed to load analysis" message={error.message || 'Something went wrong.'} onRetry={reload} />
+      </div>
+    );
+  }
+
+  if (!analysis) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10">
+        <EmptyState
+          icon={FileText}
+          title="No analyses yet"
+          description="Upload your resume and a target job description to get your first ATS alignment report."
+          action={
+            <Button as={Link} to="/upload" size="lg" iconRight={ArrowRight}>
+              Scan a Resume
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  const {
+    id,
+    company,
+    jobTitle,
+    atsScore,
+    summary,
+    categories = [],
+    gaps = { critical: [], moderate: [], aligned: [] },
+    recommendations = [],
+  } = analysis;
+
+  const titleText = analysisTitle(analysis);
+
   return (
-    <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <div className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-2 flex items-center gap-2">
-                STRIPE <span className="text-slate-300">•</span> <span className="text-slate-500 normal-case tracking-normal font-medium">Senior Systems Engineer</span>
-              </div>
-              <h1 className="text-3xl font-bold text-slate-900">ATS Real-time Optimization Report</h1>
+    <div className="max-w-6xl mx-auto animate-[fadeIn_300ms_ease-out]">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+        <div>
+          {company && jobTitle && (
+            <div className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-2 flex items-center gap-2">
+              {company} <span className="text-slate-300">•</span> <span className="text-slate-500 normal-case tracking-normal font-medium">{jobTitle}</span>
             </div>
-            <div className="flex gap-3">
-              <button className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded hover:bg-slate-50 flex items-center gap-2 transition-colors">
-                <Sparkles className="w-4 h-4" />
-                Prep for Interview
-              </button>
-              <button className="px-4 py-2 bg-teal-700 text-white font-medium rounded hover:bg-teal-800 flex items-center gap-2 transition-colors">
-                <PenTool className="w-4 h-4" />
-                Rewrite Resume
-              </button>
-            </div>
+          )}
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight break-words">ATS Real-time Optimization Report</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+          <Button as={Link} to="/prep" variant="secondary" icon={Sparkles}>
+            Prep for Interview
+          </Button>
+          <Button as={Link} to="/rewrite" icon={PenTool}>
+            Rewrite Resume
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 mb-8 items-stretch">
+        <Card className="flex-1 flex flex-col sm:flex-row items-center sm:items-start gap-8">
+          <ScoreRing score={atsScore} size={130} stroke={8} label="Overall Match" />
+          <div className="text-center sm:text-left">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{atsScore}% Match — {scoreLabel(atsScore)}</h3>
+            <p className="text-slate-500 leading-relaxed text-sm max-w-md">
+              {summary || 'Your credentials align well, but some missing requirements trigger warning tags. Action recommendations below.'}
+            </p>
           </div>
-          
-          {/* Main Top Cards */}
-          <div className="flex gap-6 mb-8">
-            {/* Overall Score */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 flex-1 flex items-center gap-8">
-              <div className="relative w-32 h-32 flex-shrink-0">
-                <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                  <path className="donut-ring" strokeWidth="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path className="donut-segment-amber" strokeWidth="3" strokeDasharray="72, 100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-3xl font-bold text-slate-900">72%</span>
+        </Card>
+
+        <div className="flex flex-wrap lg:flex-nowrap gap-4 flex-shrink-0">
+          {categories.map((cat, i) => (
+            <Card key={i} padded={false} className="p-4 flex flex-col items-center justify-between min-w-[120px] flex-1 lg:flex-none">
+              <div className="text-[10px] font-bold text-slate-500 text-center uppercase tracking-wider mb-3">
+                {cat.label}
+              </div>
+              <ScoreRing score={cat.score} size={64} label={cat.label} />
+            </Card>
+          ))}
+          {categories.length === 0 && (
+             <div className="text-sm text-slate-400 p-8 flex items-center justify-center border border-slate-200 border-dashed rounded-xl w-full">
+               No category data available.
+             </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <Card className="lg:col-span-7">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold text-slate-900">Semantic Gap Analysis</h3>
+            <span className="text-sm text-slate-400 font-medium">
+              {(gaps.critical?.length || 0) + (gaps.moderate?.length || 0)} Gaps Identified
+            </span>
+          </div>
+
+          <div className="space-y-6">
+            {gaps.critical?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-red-700 mb-3">CRITICAL MISSING SKILLS (RED)</h4>
+                <div className="flex flex-wrap gap-2">
+                  {gaps.critical.map((gap, i) => (
+                    <SeverityTag key={i} severity="critical">{gap}</SeverityTag>
+                  ))}
                 </div>
               </div>
+            )}
+            
+            {gaps.moderate?.length > 0 && (
               <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">72% Match — Good Progress</h3>
-                <p className="text-slate-500 leading-relaxed max-w-md text-sm">
-                  Your credentials align well, but missing key technical requirements is currently triggering warning tags. Action recommendations below.
-                </p>
+                <h4 className="text-xs font-bold text-amber-600 mb-3">MODERATE WARNINGS (AMBER)</h4>
+                <div className="flex flex-wrap gap-2">
+                  {gaps.moderate.map((gap, i) => (
+                    <SeverityTag key={i} severity="warning">{gap}</SeverityTag>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             
-            {/* Metric Cards Grid */}
-            <div className="flex gap-4">
-              <MetricCard title="TECHNICAL SKILLS" score={88} color="green" />
-              <MetricCard title="CORE KEYWORDS" score={45} color="red" />
-              <MetricCard title="FORMAT & SYNTAX" score={95} color="green" />
-              <MetricCard title="EDUCATION GAP" score={100} color="green" />
-            </div>
+            {gaps.aligned?.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-emerald-700 mb-3">SUCCESSFULLY ALIGNED (GREEN)</h4>
+                <div className="flex flex-wrap gap-2">
+                  {gaps.aligned.map((gap, i) => (
+                    <SeverityTag key={i} severity="success">{gap}</SeverityTag>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!gaps.critical?.length && !gaps.moderate?.length && !gaps.aligned?.length && (
+              <p className="text-sm text-slate-500">No gap analysis available for this report.</p>
+            )}
           </div>
-          
-          {/* Bottom Split Section */}
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-7 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-900">Semantic Gap Analysis</h3>
-                <span className="text-sm text-slate-400 font-medium">12 Gaps Identified</span>
+        </Card>
+
+        <Card className="lg:col-span-5">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">AI Coach Recommendations</h3>
+          <div className="space-y-4">
+            {recommendations.length > 0 ? recommendations.map((rec, i) => (
+              <div key={i} className="bg-slate-50 border border-slate-100 rounded-lg p-4 flex gap-3">
+                <Sparkles className="w-5 h-5 text-teal-700 flex-shrink-0 mt-0.5" />
+                <div>
+                  {rec.title && <h4 className="font-semibold text-slate-900 text-sm mb-1">{rec.title}</h4>}
+                  {rec.description && <p className="text-slate-500 text-sm leading-relaxed">{rec.description}</p>}
+                </div>
               </div>
-              
-              <div className="space-y-6">
-                <GapCategory 
-                  title="CRITICAL MISSING SKILLS (RED)" 
-                  color="red"
-                  tags={['Kubernetes Deployments', 'Golang Architecture', 'Microservices Routing']} 
-                />
-                <GapCategory 
-                  title="MODERATE WARNINGS (AMBER)" 
-                  color="amber"
-                  tags={['gRPC Protocols', 'Redis Caching']} 
-                />
-                <GapCategory 
-                  title="SUCCESSFULLY ALIGNED (GREEN)" 
-                  color="green"
-                  tags={['Cloud Engineering', 'Docker Orchestration', 'CI/CD Pipelines']} 
-                />
-              </div>
-            </div>
-            
-            <div className="col-span-5 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-6">AI Coach Recommendations</h3>
-              
-              <div className="space-y-4">
-                <RecommendationCard 
-                  title="Improve experience metrics"
-                  desc="Embed your 'Docker' experience directly alongside quantitative stats in your Stripe section."
-                />
-                <RecommendationCard 
-                  title="Optimize header keywords"
-                  desc="Your resume header currently misses 'Systems Architect' context tags."
-                />
-              </div>
-            </div>
+            )) : (
+              <p className="text-sm text-slate-500">No recommendations available.</p>
+            )}
           </div>
-
-        </div>
-  );
-};
-
-const MetricCard = ({ title, score, color }) => {
-  const strokeClass = color === 'green' ? 'donut-segment-green' : color === 'red' ? 'donut-segment-red' : 'donut-segment-amber';
-  
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-between min-w-[120px]">
-      <div className="text-[10px] font-bold text-slate-500 text-center uppercase tracking-wider mb-3">
-        {title}
-      </div>
-      <div className="relative w-16 h-16">
-        <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-          <path className="donut-ring" strokeWidth="4" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-          <path className={strokeClass} strokeWidth="4" strokeDasharray={`${score}, 100`} fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold text-slate-900">{score}%</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const GapCategory = ({ title, color, tags }) => {
-  const titleColor = color === 'red' ? 'text-red-700' : color === 'amber' ? 'text-amber-600' : 'text-emerald-700';
-  const bgClass = color === 'red' ? 'bg-red-50 text-red-700' : color === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700';
-  const icon = color === 'red' ? '✕' : color === 'amber' ? '!' : '✓';
-  
-  return (
-    <div>
-      <h4 className={`text-xs font-bold ${titleColor} mb-3`}>{title}</h4>
-      <div className="flex flex-wrap gap-2">
-        {tags.map(tag => (
-          <span key={tag} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium ${bgClass}`}>
-             <span className="font-bold">{icon}</span> {tag}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const RecommendationCard = ({ title, desc }) => {
-  return (
-    <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 flex gap-3">
-      <Sparkles className="w-5 h-5 text-teal-700 flex-shrink-0 mt-0.5" />
-      <div>
-        <h4 className="font-semibold text-slate-900 text-sm mb-1">{title}</h4>
-        <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
+        </Card>
       </div>
     </div>
   );
