@@ -7,9 +7,11 @@ import ScoreRing from '../components/ui/ScoreRing';
 import Button from '../components/ui/Button';
 import { SeverityTag } from '../components/ui/Tags';
 import { toast } from '../store/toastStore';
+import { getErrorMessage } from '../lib/errors';
 
 const JobMatches = () => {
-  const { data: jobs = [], loading, error, reload } = useApi(jobsApi.matches, []);
+  const { data: jobData, loading, error, reload } = useApi(jobsApi.matches, []);
+  const jobs = Array.isArray(jobData) ? jobData : [];
   const [savingId, setSavingId] = useState(null);
   const [filter, setFilter] = useState('');
   const [sortBy, setSortBy] = useState('match');
@@ -65,7 +67,13 @@ const JobMatches = () => {
   if (error) {
     return (
       <div className="max-w-6xl mx-auto">
-        <ErrorState title="Failed to load job matches" message={error.message} onRetry={reload} />
+        <ErrorState
+          title="Failed to load job matches"
+          message={error.response?.status === 404
+            ? 'The jobs API endpoint is not available on the server yet.'
+            : getErrorMessage(error)}
+          onRetry={reload}
+        />
       </div>
     );
   }

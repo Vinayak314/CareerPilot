@@ -24,11 +24,13 @@ import { PageHeader, LoadingState, ErrorState } from '../components/ui/Layout';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { TextField, TextArea, SelectField } from '../components/ui/FormField';
+import { getErrorMessage } from '../lib/errors';
 
 const COLUMNS = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
 const Tracker = () => {
-  const { data: rawApps = [], loading, error, reload, setData } = useApi(applicationsApi.list, []);
+  const { data: applicationData, loading, error, reload, setData } = useApi(applicationsApi.list, []);
+  const rawApps = Array.isArray(applicationData) ? applicationData : [];
   const [activeId, setActiveId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -105,7 +107,15 @@ const Tracker = () => {
   }
 
   if (error) {
-    return <ErrorState title="Failed to load applications" message={error.message} onRetry={reload} />;
+    return (
+      <ErrorState
+        title="Failed to load applications"
+        message={error.response?.status === 404
+          ? 'The applications API endpoint is not available on the server yet.'
+          : getErrorMessage(error)}
+        onRetry={reload}
+      />
+    );
   }
 
   const activeApp = activeId ? rawApps.find(a => a._id === activeId) : null;

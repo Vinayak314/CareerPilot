@@ -34,7 +34,16 @@ const Settings = () => {
   const [savingNotifs, setSavingNotifs] = useState(false);
 
   // Resumes
-  const { data: resumes = [], loading: resumesLoading, setData: setResumes } = useApi(resumeApi.list, []);
+  const {
+    data: resumeData,
+    error: resumesError,
+    loading: resumesLoading,
+    reload: reloadResumes,
+    setData: setResumes,
+  } = useApi(resumeApi.list, []);
+  // A failed API request leaves useApi.data as null. Keep the view safe while
+  // showing the failure separately from a genuinely empty resume list.
+  const resumes = Array.isArray(resumeData) ? resumeData : [];
 
   const handleAccountSave = async (e) => {
     e.preventDefault();
@@ -163,6 +172,13 @@ const Settings = () => {
                 
                 {resumesLoading ? (
                   <div className="text-sm text-slate-500 py-4">Loading resumes...</div>
+                ) : resumesError ? (
+                  <div className="border border-amber-200 bg-amber-50 rounded-lg p-4 text-sm text-amber-900">
+                    <p>Could not load your resumes. Please try again.</p>
+                    <Button variant="ghost" size="sm" onClick={reloadResumes} className="mt-2 text-amber-900">
+                      Retry
+                    </Button>
+                  </div>
                 ) : resumes.length === 0 ? (
                   <div className="border border-slate-200 border-dashed rounded-lg p-8 text-center text-slate-500 text-sm">
                     No resumes uploaded yet.
