@@ -7,7 +7,7 @@ This checklist is based on [CareerPilot_Technical_Overview.md](./CareerPilot_Tec
 - [x] Create a React + Vite frontend.
 - [x] Create a Node.js + Express backend.
 - [x] Connect the backend to MongoDB through Mongoose.
-- [ ] Add environment variable examples and setup documentation; configure production secrets securely.
+- [x] Add environment variable examples and setup documentation; configure production secrets securely.
 - [ ] Deploy the frontend, backend, and database.
 
 ## Frontend page work (Figma references)
@@ -123,51 +123,51 @@ Use the screenshots in [`figma/`](./figma/) as the page layout and visual refere
 - [x] Hash passwords with bcrypt and compare them at login.
 - [x] Add signup and login API endpoints that issue JWTs.
 - [x] Add login and signup pages and client auth state.
-- [ ] Validate request data and handle duplicate accounts and malformed input consistently.
-- [ ] Replace the fallback JWT secret with a required environment variable.
-- [ ] Protect authenticated routes and add an account/profile page and account management.
+- [x] Validate request data and handle duplicate accounts and malformed input consistently.
+- [x] Replace the fallback JWT secret with a required environment variable.
+- [x] Protect authenticated routes and add an account/profile page and account management.
 
 ## Resume upload and analysis
 
-- [ ] Build the resume upload and job-description input flow.
-- [ ] Parse PDF/DOCX resumes and store parsed resume data and file metadata.
-- [ ] Add Resume and Analysis data models.
-- [ ] Implement the Analyzer agent with structured, validated output (ATS score, category scores, missing keywords, weak bullets, and formatting issues).
-- [ ] Add the analysis API endpoint and persist results.
-- [ ] Replace the dashboard's static sample scores and gaps with saved analysis results.
+- [x] Build the resume upload and job-description input flow.
+- [x] Parse PDF/DOCX resumes and store parsed resume data and file metadata.
+- [x] Add Resume and Analysis data models.
+- [x] Implement the Analyzer agent with structured, validated output (ATS score, category scores, missing keywords, weak bullets, and formatting issues).
+- [x] Add the analysis API endpoint and persist results.
+- [x] Replace the dashboard's static sample scores and gaps with saved analysis results.
 
 ## AI advisor
 
-- [ ] Implement the Advisor agent for resume bullet rewrites and interview questions.
-- [ ] Add schema validation for generated output.
-- [ ] Add rewrite and interview-prep API endpoints and corresponding pages.
-- [ ] Orchestrate analysis and conditional advisor work in LangGraph, including parallel rewrite and interview-prep tasks.
+- [x] Implement the Advisor agent for resume bullet rewrites and interview questions.
+- [x] Add schema validation for generated output.
+- [x] Add rewrite and interview-prep API endpoints and corresponding pages.
+- [x] Orchestrate analysis and conditional advisor work in LangGraph, including parallel rewrite and interview-prep tasks.
 
 ## Job matching
 
-- [ ] Integrate a job postings provider (Adzuna or JSearch) and configure its API key.
-- [ ] Add local keyword pre-filtering and job-fit scoring.
-- [ ] Add JobMatch data model and ranked job matches API.
+- [x] Integrate a job postings provider (Adzuna or JSearch) and configure its API key.
+- [x] Add local keyword pre-filtering and job-fit scoring.
+- [x] Add JobMatch data model and ranked job matches API.
 - [ ] Build the Job Matches page with fit score and matched/missing skills.
-- [ ] Cache postings and avoid unnecessary repeated scoring.
+- [x] Cache postings and avoid unnecessary repeated scoring.
 
 ## Application tracker
 
-- [ ] Add Application data model and CRUD API endpoints.
+- [x] Add Application data model and CRUD API endpoints.
 - [ ] Build the Kanban tracker and status columns.
 - [ ] Add drag-and-drop status updates and persist changes through the API.
 
 ## Reliability, security, and observability
 
-- [ ] Add authentication middleware to protected feature routes and handle missing/deleted users safely.
-- [ ] Add rate limiting for analysis and advisor endpoints.
-- [ ] Cache analyses by resume and job-description hash.
-- [ ] Configure LangSmith tracing and record token usage, latency, and errors.
-- [ ] Add error handling and input/file limits across the API.
+- [x] Add authentication middleware to protected feature routes and handle missing/deleted users safely.
+- [x] Add rate limiting for analysis and advisor endpoints.
+- [x] Cache analyses by resume and job-description hash.
+- [x] Configure LangSmith tracing and record token usage, latency, and errors.
+- [x] Add error handling and input/file limits across the API.
 
 ## Documentation and delivery
 
-- [ ] Write architecture overview documentation.
-- [ ] Write setup instructions, including required environment variables and local run commands.
+- [x] Write architecture overview documentation.
+- [x] Write setup instructions, including required environment variables and local run commands.
 - [ ] Write the project report with methodology, agent design rationale, and measured evaluation results.
 - [ ] Verify the full application flows and deployment configuration.
