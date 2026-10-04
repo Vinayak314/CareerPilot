@@ -16,3 +16,4 @@ export const unauthorized = (message = 'Not authorized') => new HttpError(401, m
 export const notFound = (message = 'Not found') => new HttpError(404, message);
 export const conflict = (message) => new HttpError(409, message);
 export const unprocessable = (message, details) => new HttpError(422, message, details);
+export const tooManyRequests = (message = 'Too many requests') => new HttpError(429, message);

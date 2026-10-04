@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 
 /**
  * Job Provider Service using Adzuna API
