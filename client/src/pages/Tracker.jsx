@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Plus, GripVertical, Building2, Calendar } from 'lucide-react';
 import {
   DndContext,
   closestCorners,
+  useDroppable,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -12,8 +13,8 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -32,6 +33,7 @@ const Tracker = () => {
   const { data: applicationData, loading, error, reload, setData } = useApi(applicationsApi.list, []);
   const rawApps = Array.isArray(applicationData) ? applicationData : [];
   const [activeId, setActiveId] = useState(null);
+  const originalStatusRef = useRef(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Group applications by status
@@ -51,6 +53,7 @@ const Tracker = () => {
 
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
+    originalStatusRef.current = rawApps.find((app) => app._id === event.active.id)?.status;
   };
 
   const handleDragOver = (event) => {
@@ -83,9 +86,9 @@ const Tracker = () => {
     const app = rawApps.find(a => a._id === activeId);
     if (!app) return;
     
-    const previousStatus = app.status;
+    const previousStatus = originalStatusRef.current || app.status;
     const newStatus = COLUMNS.includes(over.id) ? over.id : rawApps.find(a => a._id === over.id)?.status;
-    
+
     if (newStatus && previousStatus !== newStatus) {
       try {
         await applicationsApi.update(activeId, { status: newStatus });
@@ -95,6 +98,7 @@ const Tracker = () => {
         setData(prev => prev.map(a => a._id === activeId ? { ...a, status: previousStatus } : a));
       }
     }
+    originalStatusRef.current = null;
   };
 
   if (loading) {
@@ -129,7 +133,7 @@ const Tracker = () => {
         }
       />
 
-      <div className="flex gap-6 overflow-x-auto pb-6 flex-1 min-h-[500px]">
+      <div className="flex-1 min-h-[500px] pb-8">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -137,9 +141,11 @@ const Tracker = () => {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          {COLUMNS.map(col => (
-            <Column key={col} title={col} items={appsByStatus[col]} />
-          ))}
+          <div className="space-y-5">
+            {COLUMNS.map(col => (
+              <Column key={col} title={col} items={appsByStatus[col]} />
+            ))}
+          </div>
 
           <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
             {activeApp ? <AppCard app={activeApp} isOverlay /> : null}
@@ -165,13 +171,13 @@ const AddJobModal = ({ open, onClose, onAdded }) => {
     const fd = new FormData(e.target);
     const payload = {
       company: fd.get('company'),
-      jobTitle: fd.get('jobTitle'),
+      title: fd.get('jobTitle'),
       status: fd.get('status'),
       location: fd.get('location') || undefined,
-      matchScore: fd.get('matchScore') ? Number(fd.get('matchScore')) : undefined,
-      jobUrl: fd.get('jobUrl') || undefined,
+      fitScore: fd.get('matchScore') ? Number(fd.get('matchScore')) : undefined,
+      url: fd.get('jobUrl') || undefined,
       notes: fd.get('notes') || undefined,
-      appliedAt: fd.get('appliedAt') || undefined
+      appliedDate: fd.get('appliedAt') ? new Date(fd.get('appliedAt')).toISOString() : undefined
     };
 
     try {
@@ -216,28 +222,37 @@ const AddJobModal = ({ open, onClose, onAdded }) => {
 };
 
 const Column = ({ title, items }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: title });
+
   return (
-    <div className="w-80 flex-shrink-0 bg-slate-50/50 border border-slate-200 rounded-xl flex flex-col h-full max-h-full">
-      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-100/50 rounded-t-xl">
+    <section
+      ref={setNodeRef}
+      className={`bg-white border rounded-xl overflow-hidden transition-colors ${isOver ? 'border-teal-400 ring-2 ring-teal-100' : 'border-slate-200'}`}
+      aria-label={`${title} applications`}
+    >
+      <div className="px-4 py-3 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <h3 className="font-bold text-slate-900">{title}</h3>
         <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full">
           {items.length}
         </span>
       </div>
       
-      <div className="p-3 flex-1 overflow-y-auto space-y-3">
-        <SortableContext id={title} items={items.map(i => i._id)} strategy={verticalListSortingStrategy}>
-          {items.map(app => (
-            <SortableAppCard key={app._id} app={app} />
-          ))}
-          {items.length === 0 && (
-            <div className="h-24 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-sm text-slate-400">
-              Drop here
+      <div className={`p-3 sm:p-4 min-h-24 transition-colors ${isOver ? 'bg-teal-50/60' : 'bg-slate-50/40'}`}>
+        <SortableContext id={title} items={items.map(i => i._id)} strategy={rectSortingStrategy}>
+          {items.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {items.map(app => (
+                <SortableAppCard key={app._id} app={app} />
+              ))}
+            </div>
+          ) : (
+            <div className="min-h-16 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-sm text-slate-400">
+              Drop an application here
             </div>
           )}
         </SortableContext>
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -258,8 +273,8 @@ const SortableAppCard = ({ app }) => {
 };
 
 const AppCard = ({ app, isOverlay }) => {
-  const matchColor = app.matchScore >= 80 ? 'text-emerald-700 bg-emerald-50' : 
-                     app.matchScore >= 60 ? 'text-amber-700 bg-amber-50' : 'text-red-700 bg-red-50';
+  const matchColor = app.fitScore >= 80 ? 'text-emerald-700 bg-emerald-50' : 
+                     app.fitScore >= 60 ? 'text-amber-700 bg-amber-50' : 'text-red-700 bg-red-50';
 
   return (
     <div className={`bg-white border ${isOverlay ? 'border-teal-500 shadow-xl scale-105' : 'border-slate-200 shadow-sm'} rounded-lg p-4 cursor-grab active:cursor-grabbing hover:border-slate-300 transition-colors group relative`}>
@@ -268,7 +283,7 @@ const AppCard = ({ app, isOverlay }) => {
       </div>
       <div className="pr-6">
         <div className="flex justify-between items-start mb-2 gap-2">
-          <h4 className="font-bold text-slate-900 text-sm leading-tight break-words">{app.jobTitle}</h4>
+          <h4 className="font-bold text-slate-900 text-sm leading-tight break-words">{app.title}</h4>
         </div>
         <div className="flex items-center gap-1.5 text-sm text-slate-600 mb-3 font-medium">
           <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -276,9 +291,9 @@ const AppCard = ({ app, isOverlay }) => {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-50">
-          {app.matchScore ? (
+          {app.fitScore ? (
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${matchColor}`}>
-              {app.matchScore}% Match
+              {app.fitScore}% Match
             </span>
           ) : null}
           <div className="flex items-center gap-1 text-[10px] text-slate-500 uppercase tracking-wider font-semibold ml-auto">

@@ -14,11 +14,9 @@ export const authApi = {
 };
 
 export const userApi = {
-  getProfile: () => data(api.get('/users/me')),
-  updateProfile: (payload) => data(api.patch('/users/me', payload)),
-  changePassword: (currentPassword, newPassword) =>
-    data(api.patch('/users/me/password', { currentPassword, newPassword })),
-  updatePreferences: (preferences) => data(api.patch('/users/me/preferences', preferences)),
+  getProfile: () => data(api.get('/users/profile')),
+  updateProfile: (payload) => data(api.patch('/users/profile', payload)),
+  deleteAccount: () => data(api.delete('/users')),
 };
 
 export const resumeApi = {
@@ -50,23 +48,27 @@ export const analysisApi = {
 };
 
 export const advisorApi = {
-  getRewrites: (analysisId) => data(api.get(`/analyses/${analysisId}/rewrites`)),
-  generateRewrites: (analysisId) => data(api.post('/advisor/rewrite', { analysisId })),
-  updateRewrite: (rewriteId, payload) => data(api.patch(`/rewrites/${rewriteId}`, payload)),
-
-  getInterviewPrep: (analysisId) => data(api.get(`/analyses/${analysisId}/interview-prep`)),
-  generateInterviewPrep: (analysisId) => data(api.post('/advisor/interview-prep', { analysisId })),
-  updateQuestionNotes: (questionId, notes) =>
-    data(api.patch(`/interview-questions/${questionId}`, { notes })),
+  generateRewrites: async (analysisId) => {
+    const { data: analysis } = await api.get(`/analyses/${analysisId}`);
+    return data(api.post('/advisor/rewrite', { analysisId, resumeId: analysis.resumeId?._id || analysis.resumeId }));
+  },
+  generateInterviewPrep: async (analysisId) => {
+    const { data: analysis } = await api.get(`/analyses/${analysisId}`);
+    return data(api.post('/advisor/interview', { analysisId, resumeId: analysis.resumeId?._id || analysis.resumeId }));
+  },
 };
 
 export const jobsApi = {
-  matches: () => data(api.get('/jobs/matches')),
+  matches: () => data(api.get('/jobs')),
+  find: (resumeId, query, location) => data(api.post('/jobs/find', { resumeId, query, location })),
+  updateStatus: (id, status) => data(api.patch(`/jobs/${id}/status`, { status })),
 };
 
 export const applicationsApi = {
   list: () => data(api.get('/applications')),
   create: (payload) => data(api.post('/applications', payload)),
+  get: (id) => data(api.get(`/applications/${id}`)),
+  get: (id) => data(api.get(`/applications/${id}`)),
   update: (id, payload) => data(api.patch(`/applications/${id}`, payload)),
   remove: (id) => data(api.delete(`/applications/${id}`)),
 };

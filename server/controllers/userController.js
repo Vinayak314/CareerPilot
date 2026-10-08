@@ -14,7 +14,7 @@ export const updateProfileSchema = z.object({
 
 export const getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id).select('-passwordHash');
     if (!user) throw notFound('User not found');
     res.json(user);
   } catch (error) {
@@ -27,8 +27,8 @@ export const updateProfile = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { $set: req.body },
-      { new: true, runValidators: true }
-    ).select('-password');
+      { returnDocument: 'after', runValidators: true }
+    ).select('-passwordHash');
     
     if (!user) throw notFound('User not found');
     res.json(user);

@@ -10,7 +10,7 @@ import Button from '../components/ui/Button';
 import { toast } from '../store/toastStore';
 
 const Settings = () => {
-  const { user, setUser, logout } = useAuthStore();
+  const { user, updateUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('account');
 
@@ -50,7 +50,7 @@ const Settings = () => {
     setSavingAccount(true);
     try {
       const updatedUser = await userApi.updateProfile({ name, email });
-      setUser(updatedUser.user || updatedUser);
+      updateUser(updatedUser.user || updatedUser);
       toast.success('Profile updated successfully.');
     } catch (err) {
       toast.error(err.message || 'Failed to update profile.');
@@ -61,31 +61,11 @@ const Settings = () => {
 
   const handleSecuritySave = async (e) => {
     e.preventDefault();
-    setSavingSecurity(true);
-    try {
-      await userApi.changePassword(currentPassword, newPassword);
-      toast.success('Password changed successfully.');
-      setCurrentPassword('');
-      setNewPassword('');
-    } catch (err) {
-      toast.error(err.message || 'Failed to change password.');
-    } finally {
-      setSavingSecurity(false);
-    }
+    toast.error('Password changes are not available yet.');
   };
 
   const handleNotificationsSave = async () => {
-    setSavingNotifs(true);
-    try {
-      if (userApi.updatePreferences) {
-        await userApi.updatePreferences({ notifications });
-      }
-      toast.success('Notification preferences saved.');
-    } catch (err) {
-      toast.error('Failed to save preferences.');
-    } finally {
-      setSavingNotifs(false);
-    }
+    toast.error('Notification preferences are not available yet.');
   };
 
   const handleDeleteResume = async (id) => {

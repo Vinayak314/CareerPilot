@@ -94,7 +94,7 @@ export const normalizeRewrites = (payload) => {
   const list = unwrapList(payload, 'rewrites', 'items', 'bullets');
   const bullets = list
     .map((r, index) => {
-      const suggestions = arr(r?.suggestions)
+      const suggestions = arr(r?.suggestions || r?.options)
         .map((s, i) =>
           typeof s === 'string'
             ? { id: `${index}-${i}`, text: s, addedKeywords: [] }
@@ -113,8 +113,8 @@ export const normalizeRewrites = (payload) => {
           ? 'accepted'
           : 'pending';
       return {
-        id: r?._id || r?.id || null,
-        original: str(r?.originalBullet || r?.original_bullet || r?.original),
+        id: r?._id || r?.id || `rewrite-${index}`,
+        original: str(r?.originalBullet || r?.original_bullet || r?.original || r?.bullet),
         issue: str(r?.issue || r?.reason || r?.weakness),
         suggestions,
         acceptedVersion: accepted,
@@ -142,7 +142,7 @@ export const normalizeInterviewPrep = (payload) => {
       category: str(q?.category || q?.type),
       difficulty: str(q?.difficulty),
       question: str(q?.question || q?.prompt || q?.text),
-      talkingPoints: toLabelList(q?.talkingPoints || q?.talking_points),
+      talkingPoints: toLabelList(q?.talkingPoints || q?.talking_points || [q?.tips, q?.rationale].filter(Boolean)),
       exampleResponse: str(q?.exampleResponse || q?.example_response || q?.sampleAnswer),
       criticalPhrases: toLabelList(q?.criticalPhrases || q?.critical_phrases || q?.keywords),
       notes: str(q?.notes),

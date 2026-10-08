@@ -22,6 +22,7 @@ const ApplicationSchema = new mongoose.Schema({
     default: 'Saved',
   },
   appliedDate: Date,
+  fitScore: { type: Number, min: 0, max: 100 },
   notes: String,
   jobMatchId: {
     type: mongoose.Schema.Types.ObjectId,

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ExternalLink, BookmarkPlus, Search, Briefcase } from 'lucide-react';
 import useApi from '../hooks/useApi';
-import { jobsApi, applicationsApi } from '../api/endpoints';
+import { jobsApi, applicationsApi, resumeApi } from '../api/endpoints';
 import { Card, PageHeader, LoadingState, ErrorState, EmptyState } from '../components/ui/Layout';
 import ScoreRing from '../components/ui/ScoreRing';
 import Button from '../components/ui/Button';
@@ -10,8 +10,21 @@ import { toast } from '../store/toastStore';
 import { getErrorMessage } from '../lib/errors';
 
 const JobMatches = () => {
-  const { data: jobData, loading, error, reload } = useApi(jobsApi.matches, []);
-  const jobs = Array.isArray(jobData) ? jobData : [];
+  const loadMatches = async () => {
+    const existing = await jobsApi.matches();
+    if (existing.length) return existing;
+    const resumes = await resumeApi.list();
+    if (!resumes.length) return [];
+    return jobsApi.find(resumes[0]._id);
+  };
+  const { data: jobData, loading, error, reload } = useApi(loadMatches, []);
+  const jobs = Array.isArray(jobData) ? jobData.map((job) => ({
+    ...job,
+    id: job._id,
+    score: job.fitScore,
+    skills: job.matchedSkills || [],
+    url: job.url,
+  })) : [];
   const [savingId, setSavingId] = useState(null);
   const [filter, setFilter] = useState('');
   const [sortBy, setSortBy] = useState('match');
@@ -21,10 +34,11 @@ const JobMatches = () => {
     try {
       await applicationsApi.create({
         company: job.company,
-        jobTitle: job.title,
-        jobUrl: job.url,
+        title: job.title,
+        url: job.url,
         status: 'Saved',
-        matchScore: job.score,
+        jobMatchId: job._id,
+        fitScore: job.fitScore,
         notes: `Salary: ${job.salary || 'Unknown'}, Location: ${job.location || 'Unknown'}`
       });
       toast.success(`Saved ${job.title} at ${job.company}`);

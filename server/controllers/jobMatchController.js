@@ -50,7 +50,7 @@ export const findMatches = async (req, res, next) => {
         return JobMatch.findOneAndUpdate(
           { userId, jobId: match.jobId },
           match,
-          { upsert: true, new: true, setDefaultsOnInsert: true }
+          { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
       })
     );
@@ -83,7 +83,7 @@ export const updateMatchStatus = async (req, res, next) => {
     const match = await JobMatch.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { status },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!match) throw notFound('Match not found.');
     res.json(match);

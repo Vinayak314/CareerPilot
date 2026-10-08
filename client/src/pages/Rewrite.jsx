@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Check, X, Edit2, Save, ArrowLeft, ArrowRight, Loader2, FileText } from 'lucide-react';
 import useAnalysisStore from '../store/analysisStore';
 import useApi from '../hooks/useApi';
-import { advisorApi } from '../api/endpoints';
+import { advisorApi, analysisApi } from '../api/endpoints';
 import { normalizeRewrites } from '../lib/normalize';
 import { Card, PageHeader, LoadingState, ErrorState, EmptyState } from '../components/ui/Layout';
 import Button from '../components/ui/Button';
@@ -16,13 +16,8 @@ const Rewrite = () => {
   
   const loader = async () => {
     if (!currentAnalysisId) return null;
-    try {
-      const raw = await advisorApi.getRewrites(currentAnalysisId);
-      return normalizeRewrites(raw);
-    } catch (err) {
-      if (err?.response?.status === 404) return { bullets: [] };
-      throw err;
-    }
+    const analysis = await analysisApi.get(currentAnalysisId);
+    return { bullets: [], company: analysis.company, jobTitle: analysis.jobTitle };
   };
 
   const { data, loading, error, reload, setData } = useApi(loader, [currentAnalysisId]);
@@ -44,7 +39,6 @@ const Rewrite = () => {
 
   const handleUpdate = async (bulletId, payload) => {
     try {
-      await advisorApi.updateRewrite(bulletId, payload);
       setData((prev) => {
         if (!prev) return prev;
         return {

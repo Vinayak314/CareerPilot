@@ -9,6 +9,7 @@ export const createApplicationSchema = z.object({
   url: z.string().url('Invalid URL').optional().or(z.literal('')),
   status: z.enum(['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected']).optional(),
   appliedDate: z.string().datetime().optional().or(z.literal('')),
+  fitScore: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
   jobMatchId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
 });
@@ -55,7 +56,7 @@ export const updateApplication = async (req, res, next) => {
     const application = await Application.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { $set: req.body },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!application) throw notFound('Application not found');
     res.json(application);
