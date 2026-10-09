@@ -11,8 +11,8 @@ export const fetchJobs = async ({ query, location = 'us', page = 1, resultsPerPa
   const appKey = process.env.ADZUNA_APP_KEY;
 
   if (!appId || !appKey) {
-    console.warn('[JobProvider] Adzuna API keys not configured. Returning mock data.');
-    return getMockJobs();
+    console.warn('[JobProvider] Adzuna API keys not configured. No live jobs can be returned.');
+    return [];
   }
 
   try {
@@ -39,35 +39,6 @@ export const fetchJobs = async ({ query, location = 'us', page = 1, resultsPerPa
     }));
   } catch (error) {
     console.error('[JobProvider] Error fetching jobs:', error.message);
-    return getMockJobs();
+    return [];
   }
-};
-
-const getMockJobs = () => {
-  return [
-    {
-      jobId: 'mock-1',
-      title: 'Senior Frontend Developer',
-      company: 'TechCorp',
-      location: 'San Francisco, CA',
-      url: 'https://example.com/job/mock-1',
-      descriptionText: 'Looking for a Senior Frontend Developer with expertise in React, Redux, and modern CSS. Must have 5+ years of experience.',
-    },
-    {
-      jobId: 'mock-2',
-      title: 'Full Stack Engineer',
-      company: 'StartupInc',
-      location: 'Remote',
-      url: 'https://example.com/job/mock-2',
-      descriptionText: 'Join our fast-paced startup. We need a Full Stack Engineer who knows Node.js, Express, React, and MongoDB. Experience with AWS is a plus.',
-    },
-    {
-      jobId: 'mock-3',
-      title: 'Backend Developer',
-      company: 'Enterprise Solutions',
-      location: 'New York, NY',
-      url: 'https://example.com/job/mock-3',
-      descriptionText: 'Backend developer needed to maintain and scale our distributed systems. Requires strong knowledge of Java, Spring Boot, and PostgreSQL.',
-    }
-  ];
 };

@@ -47,11 +47,7 @@ async function interviewNode(state) {
 }
 
 function routeAfterAnalysis(state) {
-  // If heuristic (no AI), skip advisor tasks
-  if (state.analysis?.source === 'heuristic') {
-    return END;
-  }
-  // Otherwise fan out to rewrites and interview questions in parallel
+  // Analysis must succeed with Gemini before the advisor tasks run.
   return ['rewriteNode', 'interviewNode'];
 }
 

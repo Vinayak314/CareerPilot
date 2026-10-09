@@ -71,6 +71,9 @@ export const normalizeAnalysis = (raw) => {
 
   return {
     id: a._id || a.id || null,
+    source: str(a.source),
+    resumeId: a.resumeId?._id || a.resumeId || null,
+    jobDescriptionText: str(a.jobDescriptionText || a.job_description_text),
     company: str(pick(a, 'company', 'companyName', 'company_name')),
     jobTitle: str(pick(a, 'jobTitle', 'job_title', 'role', 'title')),
     atsScore: toScore(pick(a, 'atsScore', 'ats_score', 'score')),
@@ -88,6 +91,15 @@ export const analysisTitle = (analysis) => {
   if (!analysis) return '';
   const parts = [analysis.company, analysis.jobTitle].filter(Boolean);
   return parts.length ? parts.join(' — ') : 'Untitled analysis';
+};
+
+export const analysisContextLabel = (company, jobTitle) => {
+  const normalizedCompany = str(company);
+  const normalizedJobTitle = str(jobTitle);
+  if (!normalizedCompany || !normalizedJobTitle) return '';
+  if (normalizedCompany.toLowerCase() === 'unknown company') return '';
+  if (/^0\s+jobs?\s+jobs?\s+in\s+united states$/i.test(normalizedJobTitle)) return '';
+  return `${normalizedCompany} • ${normalizedJobTitle}`;
 };
 
 export const normalizeRewrites = (payload) => {

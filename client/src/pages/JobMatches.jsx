@@ -11,11 +11,11 @@ import { getErrorMessage } from '../lib/errors';
 
 const JobMatches = () => {
   const loadMatches = async () => {
-    const existing = await jobsApi.matches();
-    if (existing.length) return existing;
+    const existing = (await jobsApi.matches()).filter((job) => !String(job.jobId || '').startsWith('mock-'));
     const resumes = await resumeApi.list();
-    if (!resumes.length) return [];
-    return jobsApi.find(resumes[0]._id);
+    if (!resumes.length) return existing;
+    const refreshed = await jobsApi.find(resumes[0]._id);
+    return refreshed.length ? refreshed : existing;
   };
   const { data: jobData, loading, error, reload } = useApi(loadMatches, []);
   const jobs = Array.isArray(jobData) ? jobData.map((job) => ({
@@ -24,9 +24,11 @@ const JobMatches = () => {
     score: job.fitScore,
     skills: job.matchedSkills || [],
     url: job.url,
+    isInternship: /\b(intern(ship)?|co[- ]?op)\b/i.test(`${job.title || ''} ${job.descriptionText || ''}`),
   })) : [];
   const [savingId, setSavingId] = useState(null);
   const [filter, setFilter] = useState('');
+  const [roleType, setRoleType] = useState('all');
   const [sortBy, setSortBy] = useState('match');
 
   const handleSave = async (job) => {
@@ -51,6 +53,9 @@ const JobMatches = () => {
 
   const filteredAndSorted = useMemo(() => {
     let result = [...jobs];
+
+    if (roleType === 'jobs') result = result.filter((job) => !job.isInternship);
+    if (roleType === 'internships') result = result.filter((job) => job.isInternship);
     
     if (filter) {
       const q = filter.toLowerCase();
@@ -67,7 +72,7 @@ const JobMatches = () => {
     });
 
     return result;
-  }, [jobs, filter, sortBy]);
+  }, [jobs, filter, roleType, sortBy]);
 
   if (loading) {
     return (
@@ -109,6 +114,16 @@ const JobMatches = () => {
                 className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none w-full sm:w-64"
               />
             </div>
+            <select
+              value={roleType}
+              onChange={e => setRoleType(e.target.value)}
+              aria-label="Filter by role type"
+              className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium focus:ring-2 focus:ring-teal-500 outline-none"
+            >
+              <option value="all">All roles</option>
+              <option value="jobs">Jobs</option>
+              <option value="internships">Internships</option>
+            </select>
             <select 
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}

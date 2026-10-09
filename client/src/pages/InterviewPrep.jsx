@@ -4,11 +4,12 @@ import { Sparkles, FileText, ArrowLeft, ArrowRight, Loader2, ChevronDown, Chevro
 import useAnalysisStore from '../store/analysisStore';
 import useApi from '../hooks/useApi';
 import { advisorApi, analysisApi } from '../api/endpoints';
-import { normalizeInterviewPrep } from '../lib/normalize';
+import { normalizeInterviewPrep, analysisContextLabel } from '../lib/normalize';
 import { Card, PageHeader, LoadingState, ErrorState, EmptyState } from '../components/ui/Layout';
 import Button from '../components/ui/Button';
 import { SeverityTag } from '../components/ui/Tags';
 import { toast } from '../store/toastStore';
+import { TextArea } from '../components/ui/FormField';
 
 const InterviewPrep = () => {
   const { currentAnalysisId } = useAnalysisStore();
@@ -21,6 +22,9 @@ const InterviewPrep = () => {
 
   const { data, loading, error, reload, setData } = useApi(loader, [currentAnalysisId]);
   const [generating, setGenerating] = useState(false);
+  const [answers, setAnswers] = useState({});
+  const [feedback, setFeedback] = useState({});
+  const [evaluatingIndex, setEvaluatingIndex] = useState(null);
 
   const handleGenerate = async () => {
     if (!currentAnalysisId) return;
@@ -28,11 +32,39 @@ const InterviewPrep = () => {
     try {
       const raw = await advisorApi.generateInterviewPrep(currentAnalysisId);
       setData(normalizeInterviewPrep(raw));
+      setAnswers({});
+      setFeedback({});
       toast.success('Interview questions generated!');
     } catch (err) {
       toast.error(err.message || 'Failed to generate interview prep.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleAnswerChange = (index, answer) => {
+    setAnswers((current) => ({ ...current, [index]: answer }));
+    setFeedback((current) => ({ ...current, [index]: undefined }));
+  };
+
+  const handleEvaluateAnswer = async (index, question) => {
+    const answer = answers[index]?.trim() || '';
+    if (answer.length < 10) {
+      toast.error('Write at least a sentence before requesting feedback.');
+      return;
+    }
+    setEvaluatingIndex(index);
+    try {
+      const result = await advisorApi.evaluateInterviewAnswer(currentAnalysisId, {
+        question: question.question,
+        category: question.type,
+        answer,
+      });
+      setFeedback((current) => ({ ...current, [index]: result }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to get answer feedback.');
+    } finally {
+      setEvaluatingIndex(null);
     }
   };
 
@@ -67,11 +99,12 @@ const InterviewPrep = () => {
   }
 
   const { questions = [], company, jobTitle } = data || {};
+  const contextLabel = analysisContextLabel(company, jobTitle);
 
   return (
     <div className="max-w-4xl mx-auto animate-[fadeIn_300ms_ease-out]">
       <PageHeader 
-        eyebrow={company && jobTitle ? `${company} • ${jobTitle}` : undefined}
+        eyebrow={contextLabel || undefined}
         title="Interview Prep" 
         description="Tailored questions based on your resume and the target role."
         actions={
@@ -106,14 +139,23 @@ const InterviewPrep = () => {
 
       <div className="space-y-6">
         {!generating && questions.map((q, i) => (
-          <QuestionCard key={i} question={q} index={i} />
+          <QuestionCard
+            key={i}
+            question={q}
+            index={i}
+            answer={answers[i] || ''}
+            feedback={feedback[i]}
+            evaluating={evaluatingIndex === i}
+            onAnswerChange={handleAnswerChange}
+            onEvaluate={handleEvaluateAnswer}
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const QuestionCard = ({ question, index }) => {
+const QuestionCard = ({ question, index, answer, feedback, evaluating, onAnswerChange, onEvaluate }) => {
   const [expanded, setExpanded] = useState(false);
   const { question: text, category, difficulty, talkingPoints = [], exampleResponse } = question;
 
@@ -177,6 +219,55 @@ const QuestionCard = ({ question, index }) => {
           )}
         </div>
       )}
+
+      <div className="p-5 sm:p-6 border-t border-slate-100 space-y-4">
+        <TextArea
+          label="Your answer"
+          hint="Type your response as you would say it in an interview. You can edit it and request feedback again."
+          value={answer}
+          onChange={(event) => onAnswerChange(index, event.target.value)}
+          rows={5}
+          maxLength={6000}
+          placeholder="Write your answer here..."
+        />
+        <div className="flex justify-end">
+          <Button onClick={() => onEvaluate(index, question)} loading={evaluating} disabled={answer.trim().length < 10} icon={Sparkles}>
+            Get AI Feedback
+          </Button>
+        </div>
+
+        {feedback && (
+          <div className="rounded-xl border border-teal-200 bg-white p-4 sm:p-5 space-y-4" aria-live="polite">
+            <div className="flex items-center justify-between gap-4">
+              <h4 className="font-bold text-slate-900">AI feedback</h4>
+              <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-800">{feedback.score}/5</span>
+            </div>
+            <p className="text-sm leading-relaxed text-slate-700">{feedback.overall}</p>
+            {feedback.strengths?.length > 0 && (
+              <div>
+                <h5 className="text-sm font-semibold text-emerald-800 mb-1">What worked</h5>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
+                  {feedback.strengths.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+            )}
+            {feedback.improvements?.length > 0 && (
+              <div>
+                <h5 className="text-sm font-semibold text-amber-800 mb-1">How to improve</h5>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
+                  {feedback.improvements.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+            )}
+            {feedback.exampleUpgrade && (
+              <div className="rounded-lg bg-slate-50 p-4">
+                <h5 className="text-sm font-semibold text-slate-800 mb-1">Possible stronger version</h5>
+                <p className="text-sm leading-relaxed text-slate-600">{feedback.exampleUpgrade}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </Card>
   );
 };

@@ -56,11 +56,21 @@ export const advisorApi = {
     const { data: analysis } = await api.get(`/analyses/${analysisId}`);
     return data(api.post('/advisor/interview', { analysisId, resumeId: analysis.resumeId?._id || analysis.resumeId }));
   },
+  evaluateInterviewAnswer: async (analysisId, { question, category, answer }) => {
+    const { data: analysis } = await api.get(`/analyses/${analysisId}`);
+    return data(api.post('/advisor/interview/feedback', {
+      analysisId,
+      resumeId: analysis.resumeId?._id || analysis.resumeId,
+      question,
+      category,
+      answer,
+    }));
+  },
 };
 
 export const jobsApi = {
   matches: () => data(api.get('/jobs')),
-  find: (resumeId, query, location) => data(api.post('/jobs/find', { resumeId, query, location })),
+  find: (resumeId, location) => data(api.post('/jobs/find', { resumeId, location })),
   updateStatus: (id, status) => data(api.patch(`/jobs/${id}/status`, { status })),
 };
 

@@ -7,8 +7,8 @@ import { z } from 'zod';
  *  - a *model* schema bound to Gemini via withStructuredOutput. It is deliberately
  *    permissive (plain strings/numbers/arrays with descriptions) because Gemini's
  *    function-calling schema subset rejects many JSON-Schema constraints;
- *  - a *result* schema that every output (AI or heuristic) must pass before it is
- *    persisted. It trims, clamps, dedupes and caps lists so stored data is always clean.
+ *  - a *result* schema that AI output must pass before it is persisted. It trims,
+ *    clamps, dedupes and caps lists so stored data is always clean.
  */
 
 // ---------------------------------------------------------------------------
@@ -170,5 +170,21 @@ export const InterviewResultSchema = z.object({
     )
     .default([])
     .transform((items) => items.filter((q) => q.question).slice(0, 10)),
+});
+
+export const InterviewFeedbackModelSchema = z.object({
+  overall: z.string().describe('Concise overall assessment of the answer'),
+  strengths: z.array(z.string()).describe('Specific things the candidate did well'),
+  improvements: z.array(z.string()).describe('Actionable ways to improve the answer'),
+  exampleUpgrade: z.string().describe('A short example of how to make the answer stronger without inventing experience'),
+  score: z.number().min(1).max(5).describe('Answer effectiveness from 1 to 5'),
+});
+
+export const InterviewFeedbackResultSchema = z.object({
+  overall: text(800),
+  strengths: z.array(text(300)).default([]).transform((items) => items.slice(0, 5)),
+  improvements: z.array(text(300)).default([]).transform((items) => items.slice(0, 5)),
+  exampleUpgrade: text(1200),
+  score: z.number().min(1).max(5),
 });
 

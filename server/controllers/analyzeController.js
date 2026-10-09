@@ -4,6 +4,7 @@ import { runAnalyzer } from '../agents/analyzerAgent.js';
 import { textHash } from '../utils/hash.js';
 import Resume from '../models/Resume.js';
 import Analysis from '../models/Analysis.js';
+import { isAiEnabled } from '../services/gemini.js';
 import { notFound, badRequest } from '../utils/httpError.js';
 
 export const analyzeRequestSchema = z.object({
@@ -28,9 +29,13 @@ export const createAnalysis = async (req, res, next) => {
     const inputHash = textHash(resume.textHash + jdHash);
 
     // Cache hit: If this user has analyzed this exact resume text against this exact JD text before
-    const existing = await Analysis.findOne({ userId, inputHash }).sort({ createdAt: -1 });
+    const existing = await Analysis.findOne({ userId, inputHash, source: 'gemini' }).sort({ createdAt: -1 });
     if (existing) {
       return res.status(200).json({ analysis: existing });
+    }
+
+    if (!isAiEnabled()) {
+      throw badRequest('Gemini AI is not configured. Set GEMINI_API_KEY and enable AI to generate an ATS score.');
     }
 
     // Cache miss: Run the analyzer

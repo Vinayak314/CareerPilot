@@ -1,8 +1,6 @@
 /**
- * Local skill/keyword extraction. Used by the heuristic analyzer (when no AI key
- * is configured or the model call fails) and as a cheap pre-filter for job-fit
- * scoring. Each entry is a canonical label plus aliases matched case-insensitively
- * on word boundaries.
+ * Local skill/keyword extraction for job-fit scoring and matching. Each entry is
+ * a canonical label plus aliases matched case-insensitively on word boundaries.
  */
 
 const SKILLS = {

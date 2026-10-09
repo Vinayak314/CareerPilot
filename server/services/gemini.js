@@ -8,7 +8,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
  * LANGCHAIN_TRACING_V2=true) and LANGSMITH_API_KEY are set in the environment.
  */
 
-export const DEFAULT_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_MODEL = 'gemini-3.1-flash-lite';
 export const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 60_000;
 
 export const isAiEnabled = () => Boolean(process.env.GEMINI_API_KEY) && process.env.AI_DISABLED !== 'true';

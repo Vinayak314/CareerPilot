@@ -4,7 +4,7 @@ import { Sparkles, Check, X, Edit2, Save, ArrowLeft, ArrowRight, Loader2, FileTe
 import useAnalysisStore from '../store/analysisStore';
 import useApi from '../hooks/useApi';
 import { advisorApi, analysisApi } from '../api/endpoints';
-import { normalizeRewrites } from '../lib/normalize';
+import { normalizeRewrites, analysisContextLabel } from '../lib/normalize';
 import { Card, PageHeader, LoadingState, ErrorState, EmptyState } from '../components/ui/Layout';
 import Button from '../components/ui/Button';
 import { TextArea } from '../components/ui/FormField';
@@ -83,11 +83,12 @@ const Rewrite = () => {
   }
 
   const { bullets = [], company, jobTitle } = data || {};
+  const contextLabel = analysisContextLabel(company, jobTitle);
 
   return (
     <div className="max-w-5xl mx-auto animate-[fadeIn_300ms_ease-out]">
       <PageHeader 
-        eyebrow={company && jobTitle ? `${company} • ${jobTitle}` : undefined}
+        eyebrow={contextLabel || undefined}
         title="Rewrite Studio" 
         description="Review and refine AI-optimized bullet points for your resume."
         actions={

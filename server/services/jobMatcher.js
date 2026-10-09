@@ -8,14 +8,6 @@ export const scoreJobFit = (resumeText, jobDescriptionText) => {
   const resumeSkills = extractSkills(resumeText);
   const jdSkills = extractSkills(jobDescriptionText);
   
-  if (jdSkills.size === 0) {
-    return {
-      fitScore: 50, // Neutral score if no skills found
-      matchedSkills: [],
-      missingSkills: [],
-    };
-  }
-
   const matched = [];
   const missing = [];
 
@@ -27,10 +19,11 @@ export const scoreJobFit = (resumeText, jobDescriptionText) => {
     }
   }
 
-  const score = Math.round((matched.length / (matched.length + missing.length)) * 100);
+  const score = jdSkills.size ? Math.round((matched.length / jdSkills.size) * 100) : 0;
 
   return {
     fitScore: score,
+    scorable: jdSkills.size > 0,
     matchedSkills: matched.slice(0, 15), // Cap to prevent huge documents
     missingSkills: missing.slice(0, 15),
   };
