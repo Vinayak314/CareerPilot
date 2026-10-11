@@ -14,7 +14,13 @@ const userSchema = new mongoose.Schema({
   passwordHash: {
     type: String,
     required: true
-  }
+  },
+  preferences: {
+    location: String,
+    country: { type: String, default: 'in' },
+    employmentType: { type: String, default: 'all' },
+    remoteOnly: { type: Boolean, default: false },
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

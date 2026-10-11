@@ -9,7 +9,14 @@ import { z } from 'zod';
 export const updateProfileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
   email: z.string().email('Please include a valid email').optional(),
-  // Add notification preferences or other settings here later
+  preferences: z
+    .object({
+      location: z.string().optional(),
+      country: z.string().optional(),
+      employmentType: z.string().optional(),
+      remoteOnly: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const getProfile = async (req, res, next) => {

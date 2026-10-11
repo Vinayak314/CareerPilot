@@ -55,6 +55,10 @@ const SKILLS = {
   gRPC: ['grpc'],
   Microservices: ['microservices', 'microservice', 'micro-services'],
   WebSockets: ['websocket', 'websockets', 'socket\\.io'],
+  'Django REST Framework': ['django rest framework', 'django-rest-framework', 'drf'],
+  Celery: ['celery'],
+  Postman: ['postman'],
+  'MERN Stack': ['mern', 'mern stack'],
 
   // Data stores
   MongoDB: ['mongodb', 'mongo', 'mongoose'],
@@ -122,15 +126,61 @@ const SKILLS = {
   'System Design': ['system design', 'distributed systems', 'scalable systems'],
   'Data Structures': ['data structures', 'algorithms'],
   OOP: ['oop', 'object-oriented', 'object oriented'],
-  Security: ['security', 'owasp', 'authentication', 'authorization', 'oauth', 'jwt'],
+  Security: ['security', 'authentication', 'authorization', 'oauth', 'jwt'],
   Accessibility: ['accessibility', 'a11y', 'wcag'],
   'Responsive Design': ['responsive design', 'responsive web design', 'mobile-first'],
   'UI/UX': ['ui/ux', 'ux', 'user experience', 'figma'],
-  'Performance Optimization': ['performance optimization', 'performance tuning', 'optimization'],
-  Observability: ['observability', 'monitoring', 'logging', 'prometheus', 'grafana', 'datadog'],
+  'Performance Optimization': ['performance optimization', 'performance tuning'],
+  Observability: ['observability', 'prometheus', 'grafana', 'datadog', 'new relic'],
   'API Design': ['api design'],
   'Product Management': ['product management', 'roadmap'],
   'Project Management': ['project management', 'jira'],
+
+  // Cybersecurity
+  'SOC Operations': ['soc', 'security operations center', 'security operations centre', 'security operations'],
+  SIEM: ['siem', 'security information and event management'],
+  Splunk: ['splunk'],
+  'IBM QRadar': ['qradar'],
+  'Microsoft Sentinel': ['azure sentinel', 'microsoft sentinel'],
+  Wireshark: ['wireshark'],
+  Nmap: ['nmap'],
+  Metasploit: ['metasploit'],
+  'Burp Suite': ['burp suite', 'burpsuite', 'burp'],
+  'Kali Linux': ['kali linux', 'kali'],
+  'Penetration Testing': ['penetration testing', 'penetration tester', 'pen testing', 'pentesting', 'pentest', 'ethical hacking', 'vapt'],
+  'Vulnerability Assessment': ['vulnerability assessment', 'vulnerability management', 'vulnerability scanning', 'nessus', 'openvas', 'qualys'],
+  'Web Application Security': ['owasp', 'web application security', 'xss', 'sql injection', 'csrf'],
+  'Incident Response': ['incident response', 'incident handling', 'csirt'],
+  'Threat Intelligence': ['threat intelligence', 'threat intel'],
+  'Threat Hunting': ['threat hunting'],
+  'Log Analysis': ['log analysis', 'log monitoring', 'log correlation'],
+  'Network Security': ['network security', 'firewall', 'firewalls', 'ids/ips', 'intrusion detection', 'intrusion prevention'],
+  Networking: ['tcp/ip', 'osi model', 'subnetting', 'computer networks', 'computer networking', 'network protocols'],
+  'Malware Analysis': ['malware analysis', 'reverse engineering'],
+  'Digital Forensics': ['digital forensics', 'forensics', 'dfir'],
+  EDR: ['edr', 'endpoint detection', 'crowdstrike', 'sentinelone', 'carbon black', 'microsoft defender'],
+  'MITRE ATT&CK': ['mitre att&ck', 'mitre attack', 'mitre'],
+  'ISO 27001': ['iso 27001', 'iso/iec 27001', 'iso27001'],
+  NIST: ['nist'],
+  'Security Compliance': ['gdpr', 'pci dss', 'pci-dss', 'hipaa', 'soc 2', 'soc2', 'grc'],
+  'Active Directory': ['active directory'],
+  PowerShell: ['powershell'],
+  IAM: ['iam', 'identity and access management', 'okta', 'sailpoint', 'saviynt'],
+  'Cloud Security': ['cloud security'],
+  Cryptography: ['cryptography', 'encryption', 'pki'],
+  CTF: ['ctf', 'ctfs', 'capture the flag', 'tryhackme', 'hackthebox', 'hack the box'],
+
+  // Certifications
+  'CompTIA Security+': ['security\\+', 'comptia security\\+', 'sec\\+'],
+  'CompTIA Network+': ['network\\+'],
+  CEH: ['ceh', 'certified ethical hacker'],
+  eJPT: ['ejpt'],
+  OSCP: ['oscp'],
+  CISSP: ['cissp'],
+  CISM: ['cism'],
+  CCNA: ['ccna'],
+  'AWS Certification': ['aws certified', 'aws certification'],
+  'Azure Certification': ['az-900', 'az-104', 'az-500', 'azure certified', 'azure certification'],
 
   // Soft skills (kept narrow to avoid noise)
   Communication: ['communication', 'communicate'],
@@ -151,23 +201,101 @@ const MATCHERS = Object.entries(SKILLS).map(([label, aliases]) => ({
 /** Soft skills are reported, but weighted lower than hard skills when scoring. */
 const SOFT_SKILLS = new Set(['Communication', 'Leadership', 'Collaboration', 'Problem Solving', 'Stakeholder', 'Agile']);
 
+/** Professional certifications (reported separately in skill-gap analysis). */
+const CERTIFICATIONS = new Set([
+  'CompTIA Security+', 'CompTIA Network+', 'CEH', 'eJPT', 'OSCP', 'CISSP', 'CISM', 'CCNA', 'AWS Certification', 'Azure Certification',
+]);
+
+/**
+ * Labels too broad to be meaningful as a job-match skill or gap ("Security" is in
+ * almost every posting; soft skills are never shown as major gaps).
+ */
+const GENERIC_SKILLS = new Set([...SOFT_SKILLS, 'Security', 'Performance Optimization', 'Project Management', 'Product Management']);
+
+/**
+ * Words that are also ordinary English ("react to alerts", "express interest",
+ * "network node"). In job text these only count when written the way the
+ * technology is written. Patterns run case-sensitively on the original text.
+ */
+const STRICT_PATTERNS = {
+  React: /\bReact(?:\.?js|JS)?\b(?!\s+(?:to|quickly|promptly|swiftly)\b)/,
+  Express: /\bExpress(?:\.?js|JS)?\b|\bexpress\.?js\b/,
+  'Node.js': /\bNode(?:\.?js|JS)?\b|\bnode\.?js\b/,
+  Swift: /\bSwift(?:UI)?\b/,
+  Rust: /\bRust\b/,
+  Ruby: /\bRuby\b/,
+  Scala: /\bScala\b/,
+  Dart: /\bDart\b/,
+  Spark: /\b(?:Apache\s)?Spark\b|\bPySpark\b/,
+  'SOC Operations': /\bSOC\b(?!\s?-?\s?2)|[Ss]ecurity [Oo]perations/,
+  IAM: /\bIAM\b|[Ii]dentity and [Aa]ccess|\b(?:Okta|SailPoint|Saviynt)\b/,
+  EDR: /\bEDR\b|[Ee]ndpoint [Dd]etection|CrowdStrike|SentinelOne|Carbon Black|Defender/,
+  CTF: /\bCTFs?\b|[Cc]apture [Tt]he [Ff]lag|TryHackMe|HackTheBox|Hack The Box/i,
+  'Burp Suite': /\bBurp\b/i,
+  Java: /\bJava\b(?!\s*[Ss]cript)/,
+};
+
 /**
  * Count occurrences of each known skill in `text`.
+ * @param {{ strict?: boolean }} [options] strict: require tech-style casing for
+ *   ambiguous words. Use for third-party text (job ads); resumes use lenient mode.
  * @returns {Map<string, number>} canonical label -> count
  */
-export const extractSkills = (text) => {
+export const extractSkills = (text, { strict = false } = {}) => {
   const counts = new Map();
   if (!text) return counts;
   const haystack = ` ${text.toLowerCase()} `;
   for (const { label, regex } of MATCHERS) {
     regex.lastIndex = 0;
     const matches = haystack.match(regex);
-    if (matches?.length) counts.set(label, matches.length);
+    if (!matches?.length) continue;
+    if (strict && STRICT_PATTERNS[label] && !STRICT_PATTERNS[label].test(text)) continue;
+    counts.set(label, matches.length);
   }
   return counts;
 };
 
 export const isSoftSkill = (label) => SOFT_SKILLS.has(label);
+export const isCertification = (label) => CERTIFICATIONS.has(label);
+export const isGenericSkill = (label) => GENERIC_SKILLS.has(label);
+
+/**
+ * Families of interchangeable / adjacent technologies. Used to tell a candidate
+ * "not in your resume, but you have related experience with X".
+ */
+const RELATED_GROUPS = [
+  ['SQL', 'MySQL', 'PostgreSQL', 'SQLite'],
+  ['MongoDB', 'DynamoDB', 'Cassandra', 'Firebase', 'Redis'],
+  ['React', 'Angular', 'Vue.js', 'Svelte', 'Next.js'],
+  ['Node.js', 'Express', 'NestJS'],
+  ['Django', 'Flask', 'FastAPI', 'Django REST Framework'],
+  ['Spring Boot', '.NET', 'Ruby on Rails'],
+  ['AWS', 'Azure', 'GCP'],
+  ['Docker', 'Kubernetes'],
+  ['Jenkins', 'GitHub Actions', 'CI/CD'],
+  ['Jest', 'Mocha', 'Cypress', 'Playwright', 'Selenium', 'PyTest', 'Unit Testing'],
+  ['JavaScript', 'TypeScript'],
+  ['Java', 'Kotlin', 'C#'],
+  ['TensorFlow', 'PyTorch', 'scikit-learn'],
+  ['SIEM', 'Splunk', 'IBM QRadar', 'Microsoft Sentinel', 'Log Analysis'],
+  ['SOC Operations', 'Incident Response', 'Threat Hunting', 'EDR', 'Log Analysis'],
+  ['Penetration Testing', 'Vulnerability Assessment', 'Web Application Security', 'Burp Suite', 'Metasploit', 'Kali Linux', 'Nmap', 'CTF'],
+  ['Network Security', 'Networking', 'Wireshark', 'Nmap', 'CCNA'],
+  ['Malware Analysis', 'Digital Forensics', 'Threat Intelligence'],
+  ['ISO 27001', 'NIST', 'Security Compliance'],
+  ['CompTIA Security+', 'CEH', 'eJPT', 'OSCP', 'CompTIA Network+'],
+  ['Bash', 'PowerShell', 'Linux'],
+];
+
+/** Skills from `candidateSkills` that are related to `label` (excluding the label itself). */
+export const relatedSkills = (label, candidateSkills) => {
+  const out = new Set();
+  for (const group of RELATED_GROUPS) {
+    if (!group.includes(label)) continue;
+    for (const s of group) if (s !== label && candidateSkills.has(s)) out.add(s);
+  }
+  return [...out];
+};
 
 /** True if `text` mentions the canonical skill (or one of its aliases). */
 export const mentionsSkill = (text, label) => {
@@ -177,7 +305,7 @@ export const mentionsSkill = (text, label) => {
   return matcher.regex.test(` ${text.toLowerCase()} `);
 };
 
-const STOPWORDS = new Set(
+export const STOPWORDS = new Set(
   `a about above after again against all also am an and any are as at be because been before being below between both
   but by can could did do does doing down during each etc few for from further had has have having he her here hers
   him his how i if in into is it its itself just me more most my no nor not of off on once only or other our ours out

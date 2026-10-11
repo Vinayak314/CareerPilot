@@ -69,8 +69,11 @@ export const advisorApi = {
 };
 
 export const jobsApi = {
-  matches: () => data(api.get('/jobs')),
-  find: (resumeId, location) => data(api.post('/jobs/find', { resumeId, location })),
+  matches: (params) => data(api.get('/jobs', { params })),
+  find: (resumeId, options = {}) => {
+    const payload = typeof options === 'string' ? { resumeId, location: options } : { resumeId, ...options };
+    return data(api.post('/jobs/find', payload));
+  },
   updateStatus: (id, status) => data(api.patch(`/jobs/${id}/status`, { status })),
 };
 
