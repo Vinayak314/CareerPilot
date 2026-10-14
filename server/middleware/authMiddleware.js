@@ -1,26 +1,29 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
+import { unauthorized } from '../utils/httpError.js';
 
 export const protect = async (req, res, next) => {
-  let token;
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not defined');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      req.user = await User.findById(decoded.id).select('-passwordHash');
-      next();
-    } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
-    }
+  const authorization = req.headers.authorization;
+  if (!authorization) return next(unauthorized('Not authorized, no token'));
+  const match = /^Bearer\s+(\S+)$/i.exec(authorization);
+  if (!match) return next(unauthorized('Not authorized, token failed'));
+  if (!process.env.JWT_SECRET) return next(new Error('JWT_SECRET is not defined'));
+  let decoded;
+  try {
+    decoded = jwt.verify(match[1], process.env.JWT_SECRET, { algorithms: ['HS256'] });
+  } catch {
+    return next(unauthorized('Not authorized, token failed'));
   }
-
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+  if (!decoded || typeof decoded !== 'object' || !mongoose.isObjectIdOrHexString(decoded.id)) {
+    return next(unauthorized('Not authorized, token failed'));
   }
+  try {
+    const user = await User.findById(decoded.id).select('-passwordHash');
+    if (!user) return next(unauthorized('Not authorized, user no longer exists'));
+    req.user = user;
+  } catch (error) {
+    return next(error);
+  }
+  return next();
 };

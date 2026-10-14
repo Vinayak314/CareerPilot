@@ -13,6 +13,32 @@ const MIN_JD_CHARS = 80;
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_HTML_BYTES = 3 * 1024 * 1024;
 
+const isLinkedIn = (url) => url.hostname === 'linkedin.com' || url.hostname.endsWith('.linkedin.com');
+
+/** Search-result links identify the selected posting in currentJobId. */
+export const normalizeJobUrl = (rawUrl) => {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw badRequest('Please provide a valid job posting URL.');
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw badRequest('Please provide an HTTP/HTTPS job URL without credentials.');
+  }
+  if (!isLinkedIn(url)) return url;
+  const jobId = url.searchParams.get('currentJobId') || url.pathname.match(/\/jobs\/view\/(?:[^/]*-)?(\d+)\/?$/)?.[1];
+  if (!jobId || !/^\d+$/.test(jobId)) {
+    throw badRequest('Choose a specific LinkedIn job and copy its link, or paste the job description text.');
+  }
+  return new URL(`https://www.linkedin.com/jobs/view/${jobId}/`);
+};
+
+const linkedInUnavailable = () => unprocessable(
+  'We could not read the LinkedIn job description. Open the job on LinkedIn, copy its responsibilities and requirements, and paste them into Job Description below.',
+  { jobDescriptionText: 'Paste the full job description here to continue.' }
+);
+
 const isPrivateIp = (ip) => {
   if (net.isIPv4(ip)) {
     const [a, b] = ip.split('.').map(Number);
@@ -111,9 +137,21 @@ const extractJsonLdJob = (html) => {
   return null;
 };
 
+/** Only accept a posting description on LinkedIn, never the surrounding search/sign-in page. */
+export const extractLinkedInJob = (html) => {
+  const structured = extractJsonLdJob(html);
+  if (structured?.text.length >= MIN_JD_CHARS) return structured;
+  const description = html.match(/<div\b[^>]*class\s*=\s*["'][^"']*\bshow-more-less-html__markup\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1];
+  const text = description ? htmlToText(description) : '';
+  if (text.length < MIN_JD_CHARS) throw linkedInUnavailable();
+  const title = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '';
+  const company = html.match(/<a\b[^>]*class\s*=\s*["'][^"']*\btopcard__org-name-link\b[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)?.[1] || '';
+  return { text, jobTitle: htmlToText(title), company: htmlToText(company) };
+};
+
 /** Fetch a job posting page and return its description text plus title/company if found. */
 export const fetchJobDescription = async (rawUrl) => {
-  const url = await assertPublicUrl(rawUrl);
+  const url = await assertPublicUrl(normalizeJobUrl(rawUrl).href);
   let response;
   try {
     response = await fetch(url, {
@@ -125,11 +163,13 @@ export const fetchJobDescription = async (rawUrl) => {
       },
     });
   } catch {
+    if (isLinkedIn(url)) throw linkedInUnavailable();
     throw unprocessable('We could not load that job URL. Paste the job description text instead.');
   }
   // Re-check the final host after redirects.
   if (response.url && response.url !== url.href) await assertPublicUrl(response.url);
   if (!response.ok) {
+    if (isLinkedIn(url)) throw linkedInUnavailable();
     throw unprocessable(`The job site responded with ${response.status}. Paste the job description text instead.`);
   }
 
@@ -138,6 +178,8 @@ export const fetchJobDescription = async (rawUrl) => {
     throw unprocessable('That URL does not point to a web page. Paste the job description text instead.');
   }
   const body = (await response.text()).slice(0, MAX_HTML_BYTES);
+
+  if (isLinkedIn(url)) return extractLinkedInJob(body);
 
   if (contentType.includes('text/plain')) return { text: body.trim(), jobTitle: '', company: '' };
 

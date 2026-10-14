@@ -1,5 +1,19 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import { conflict } from '../utils/httpError.js';
+
+const emailSchema = z.string().trim().toLowerCase().email('Please include a valid email');
+const passwordSchema = z.string().min(1, 'Password is required').refine(
+  (value) => Buffer.byteLength(value, 'utf8') <= 72,
+  'Password must be at most 72 bytes'
+);
+export const registerSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+  email: emailSchema,
+  password: passwordSchema.refine((value) => value.length >= 8, 'Password must be at least 8 characters'),
+});
+export const loginSchema = z.object({ email: emailSchema, password: passwordSchema });
 
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
@@ -10,15 +24,16 @@ const generateToken = (id) => {
   });
 };
 
-export const registerUser = async (req, res) => {
+export const registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      throw conflict('An account with this email already exists.');
     }
 
+    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not defined');
     const user = await User.create({
       name,
       email,
@@ -36,11 +51,11 @@ export const registerUser = async (req, res) => {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const loginUser = async (req, res) => {
+export const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -57,6 +72,6 @@ export const loginUser = async (req, res) => {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };

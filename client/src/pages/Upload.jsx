@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, File, X, Trash2, ArrowRight } from 'lucide-react';
+import { UploadCloud, File, Trash2, ArrowRight } from 'lucide-react';
+import useApi from '../hooks/useApi';
 import useUploadStore from '../store/uploadStore';
 import useAnalysisStore from '../store/analysisStore';
 import { resumeApi, analysisApi } from '../api/endpoints';
 import { getErrorMessage } from '../lib/errors';
-import { formatFileSize, isHttpUrl } from '../lib/format';
+import { formatDate, formatFileSize, isHttpUrl } from '../lib/format';
 import { Card, PageHeader, Alert } from '../components/ui/Layout';
 import { TextField, TextArea } from '../components/ui/FormField';
 import Button from '../components/ui/Button';
@@ -17,14 +18,19 @@ const Upload = () => {
   const { file, jobUrl, jobText, uploadedResumeId, setFile, setJobUrl, setJobText, setUploadedResumeId, clearAll } = useUploadStore();
   const { setCurrentAnalysisId } = useAnalysisStore();
   const navigate = useNavigate();
+  const { data: savedResumes, loading: loadingResumes, error: resumeError, reload: reloadResumes } = useApi(resumeApi.list, []);
+  const resumes = Array.isArray(savedResumes) ? savedResumes : [];
+  const selectedResume = !file && resumes.find((resume) => resume._id === uploadedResumeId);
 
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(null);
+  const [jobTextError, setJobTextError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   
   const fileInputRef = useRef(null);
   const abortRef = useRef(null);
+  const jobTextRef = useRef(null);
 
   const validateFile = (f) => {
     if (!f) return 'Please select a file.';
@@ -38,6 +44,7 @@ const Upload = () => {
   };
 
   const handleFileChange = (f) => {
+    if (submitting) return;
     setError(null);
     const err = validateFile(f);
     if (err) {
@@ -57,28 +64,30 @@ const Upload = () => {
     }
   }, []);
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileChange(e.dataTransfer.files[0]);
     }
-  }, []);
+  };
 
   const handleClear = () => {
     abortRef.current?.abort();
     clearAll();
     setError(null);
+    setJobTextError(null);
     setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async () => {
     setError(null);
+    setJobTextError(null);
     
     if (!file && !uploadedResumeId) {
-      setError('Please upload your resume first.');
+      setError('Please upload a resume or choose an existing resume first.');
       return;
     }
     
@@ -132,6 +141,10 @@ const Upload = () => {
     } catch (err) {
       if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
         setError(getErrorMessage(err, 'Analysis failed. Please try again.'));
+        if (err.response?.status === 422 && jobUrl.trim() && !jobText.trim()) {
+          setJobTextError(err.response?.data?.details?.jobDescriptionText || 'The job page could not be read. Paste its responsibilities and requirements here.');
+          requestAnimationFrame(() => jobTextRef.current?.focus());
+        }
       }
     } finally {
       setSubmitting(false);
@@ -149,7 +162,7 @@ const Upload = () => {
       />
 
       <div className="space-y-6">
-        {error && <Alert title="Upload error">{error}</Alert>}
+        {error && <Alert title="Analysis could not be completed">{error}</Alert>}
 
         <Card className="flex flex-col">
           <div className="flex items-center justify-between mb-4">
@@ -157,6 +170,59 @@ const Upload = () => {
             <span className="text-sm font-medium text-slate-500">PDF, DOCX or TXT</span>
           </div>
 
+          <div className="mb-5">
+            {loadingResumes ? (
+              <p className="text-sm text-slate-500 py-4">Loading saved resumes...</p>
+            ) : resumeError ? (
+              <div className="border border-amber-200 bg-amber-50 rounded-lg p-4 text-sm text-amber-900" role="alert">
+                <p>Could not load your saved resumes.</p>
+                <Button variant="ghost" size="sm" onClick={reloadResumes} disabled={submitting} className="mt-2">Retry</Button>
+              </div>
+            ) : resumes.length > 0 ? (
+              <>
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Your uploaded resumes</h3>
+                <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 overflow-hidden">
+                  {resumes.map((resume) => {
+                    const selected = !file && uploadedResumeId === resume._id;
+                    return (
+                      <div key={resume._id} className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors ${selected ? 'bg-teal-50' : 'bg-white hover:bg-slate-50'}`}>
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className="p-2 bg-teal-50 text-teal-700 rounded-lg shrink-0">
+                            <File className="w-5 h-5" aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 text-sm truncate">{resume.fileName}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Uploaded {formatDate(resume.createdAt) || 'previously'}{resume.version ? ` ? Version ${resume.version}` : ''}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant={selected ? 'primary' : 'secondary'}
+                          size="sm"
+                          disabled={submitting}
+                          aria-pressed={selected}
+                          onClick={() => {
+                            setFile(null);
+                            setUploadedResumeId(resume._id);
+                            setError(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          className="w-full sm:w-auto shrink-0"
+                        >
+                          {selected ? 'Selected' : 'Use this resume'}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-slate-500">No saved resumes yet. Upload your first resume below.</p>
+            )}
+          </div>
+
+          {selectedResume && (
+            <p className="mb-3 text-sm text-teal-700" role="status">Saved resume selected. You can also upload a new file below.</p>
+          )}
           {!file ? (
             <div 
               onDragEnter={handleDrag}
@@ -170,6 +236,7 @@ const Upload = () => {
               <input 
                 ref={fileInputRef}
                 type="file" 
+                disabled={submitting}
                 accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                 onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -215,7 +282,7 @@ const Upload = () => {
             <TextField
               id="jobUrl"
               label="Job URL"
-              hint="Paste a link to the job posting (e.g. LinkedIn, Indeed, company site)."
+              hint="Paste a link to a specific job. If the site requires sign-in or blocks access, paste the job description below."
               value={jobUrl}
               onChange={(e) => setJobUrl(e.target.value)}
               placeholder="https://..."
@@ -230,9 +297,12 @@ const Upload = () => {
 
             <TextArea
               id="jobText"
+              ref={jobTextRef}
               label="Job Description"
+              hint="Pasted text takes priority over the URL. Include the role's responsibilities and requirements."
+              error={jobTextError}
               value={jobText}
-              onChange={(e) => setJobText(e.target.value)}
+              onChange={(e) => { setJobText(e.target.value); setJobTextError(null); }}
               placeholder="Paste the full job description here..."
               disabled={submitting}
               className="h-40"
